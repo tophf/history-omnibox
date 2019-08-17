@@ -103,8 +103,7 @@ function makeWordDetector(s) {
 function applyWordDetector(s, rx) {
   const premarked = s.replace(rx, '\x01$&\x02');
   const safeXml = reescapeXML(premarked);
-  return safeXml
-    .replace(/\x01(.*?)\x02/gsu, '<match>$1</match>');
+  return safeXml.replace(/\x01(.*?)\x02/gsu, '<match>$1</match>');
 }
 
 function reescapeXML(text) {
