@@ -1,0 +1,20 @@
+{
+  "name": "History omnibox",
+  "description": "History omnibox search predictions",
+  "version": "1.0",
+  "omnibox": {
+    "keyword": "!"
+  },
+  "background": {
+    "scripts": [
+      "background.js"
+    ],
+    "persistent": false
+  },
+  "permissions": [
+    "storage",
+    "history"
+  ],
+  "manifest_version": 2,
+  "minimum_chrome_version": "55"
+}
