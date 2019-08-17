@@ -1,6 +1,4 @@
-const STORAGE_URLS = 'urls';
 const STORAGE_TEXT = 'text';
-
 let lastText = null;
 
 chrome.omnibox.onInputStarted.addListener(setDefaultSuggestion);
@@ -12,7 +10,6 @@ chrome.omnibox.onInputChanged.addListener(async (text, suggest) => {
     return;
   lastText = text;
   chrome.storage.local.set({[STORAGE_TEXT]: text});
-  chrome.storage.local.remove(STORAGE_URLS);
   setDefaultSuggestion(text);
   if (text) {
     chrome.history.search({
@@ -21,21 +18,16 @@ chrome.omnibox.onInputChanged.addListener(async (text, suggest) => {
       startTime: 0,
     }, items => {
       const results = items.map(makeSuggestion, makeWordDetector(text));
-      chrome.storage.local.set({[STORAGE_URLS]: results.map(r => r.content)});
       suggest(results);
     });
   }
 });
 
 chrome.omnibox.onInputEntered.addListener(text => {
-  chrome.storage.local.get(STORAGE_URLS, data => {
-    let urls = data[STORAGE_URLS];
-    if (!Array.isArray(urls))
-      urls = [];
-    const url = urls.includes(text) ? text : makeSearchUrl(text);
-    chrome.tabs.update({url});
-    chrome.storage.local.remove([STORAGE_URLS, STORAGE_TEXT]);
-  });
+  text = text.trim();
+  const url = tryUrl(text) ? text : makeSearchUrl(text);
+  chrome.tabs.update({url});
+  chrome.storage.local.remove(STORAGE_TEXT);
 });
 
 function getLastText() {
@@ -121,4 +113,10 @@ function reescapeXML(text) {
         .replace(/'/g, '&apos;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;');
+}
+
+function tryUrl(s) {
+  try {
+    return new URL(s);
+  } catch (e) {}
 }
