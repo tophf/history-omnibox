@@ -1,5 +1,14 @@
 const STORAGE_TEXT = 'text';
+const FIRST_DATE_RANGE = 7 * 24 * 3600 * 1000;
 let lastText = null;
+
+const browser = window.browser || {
+  history: {
+    search: opts =>
+      new Promise(resolve =>
+        chrome.history.search(opts, resolve)),
+  },
+};
 
 chrome.omnibox.onInputStarted.addListener(setDefaultSuggestion);
 
@@ -12,14 +21,17 @@ chrome.omnibox.onInputChanged.addListener(async (text, suggest) => {
   chrome.storage.local.set({[STORAGE_TEXT]: text});
   setDefaultSuggestion(text);
   if (text) {
-    chrome.history.search({
+    const opts = {
       text,
       maxResults: 16,
-      startTime: 0,
-    }, items => {
-      const results = items.map(makeSuggestion, makeWordDetector(text));
-      suggest(results);
-    });
+      startTime: Date.now() - FIRST_DATE_RANGE,
+    };
+    let items = await browser.history.search(opts);
+    if (!items.length) {
+      opts.startTime = 0;
+      items = await browser.history.search(opts);
+    }
+    suggest(items.map(makeSuggestion, makeWordDetector(text)));
   }
 });
 
