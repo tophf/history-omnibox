@@ -1,5 +1,6 @@
 const STORAGE_TEXT = 'text';
 const FIRST_DATE_RANGE = 7 * 24 * 3600 * 1000;
+const MAX_MATCHES = 11;
 let lastText = null;
 
 const browser = window.browser || {
@@ -23,7 +24,7 @@ chrome.omnibox.onInputChanged.addListener(async (text, suggest) => {
   if (text) {
     const opts = {
       text,
-      maxResults: 16,
+      maxResults: MAX_MATCHES,
       startTime: Date.now() - FIRST_DATE_RANGE,
     };
     let items = await browser.history.search(opts);
