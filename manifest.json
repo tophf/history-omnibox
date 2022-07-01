@@ -6,15 +6,12 @@
     "keyword": "!"
   },
   "background": {
-    "scripts": [
-      "background.js"
-    ],
-    "persistent": false
+    "service_worker": "background.js"
   },
   "permissions": [
     "storage",
     "history"
   ],
-  "manifest_version": 2,
-  "minimum_chrome_version": "55"
+  "manifest_version": 3,
+  "minimum_chrome_version": "102"
 }

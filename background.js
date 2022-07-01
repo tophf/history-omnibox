@@ -1,15 +1,9 @@
+'use strict';
+
 const STORAGE_TEXT = 'text';
 const FIRST_DATE_RANGE = 7 * 24 * 3600 * 1000;
 const MAX_MATCHES = 11;
 let lastText = null;
-
-const browser = window.browser || {
-  history: {
-    search: opts =>
-      new Promise(resolve =>
-        chrome.history.search(opts, resolve)),
-  },
-};
 
 chrome.omnibox.onInputStarted.addListener(setDefaultSuggestion);
 
@@ -27,12 +21,16 @@ chrome.omnibox.onInputChanged.addListener(async (text, suggest) => {
       maxResults: MAX_MATCHES,
       startTime: Date.now() - FIRST_DATE_RANGE,
     };
-    let items = await browser.history.search(opts);
-    if (!items.length) {
+    let items;
+    for (let pass = 0; ++pass <= 2;) {
+      items = await chrome.history.search(opts);
+      if (items.length)
+        break;
       opts.startTime = 0;
-      items = await browser.history.search(opts);
     }
-    suggest(items.map(makeSuggestion, makeWordDetector(text)));
+    items = items.map(makeSuggestion, makeWordDetector(text));
+    if (items.length)
+      suggest(items);
   }
 });
 
@@ -43,11 +41,8 @@ chrome.omnibox.onInputEntered.addListener(text => {
   chrome.storage.local.remove(STORAGE_TEXT);
 });
 
-function getLastText() {
-  return new Promise(resolve => {
-    chrome.storage.local.get(STORAGE_TEXT, data =>
-      resolve(data[STORAGE_TEXT]));
-  });
+async function getLastText() {
+  return (await chrome.storage.local.get(STORAGE_TEXT))[STORAGE_TEXT];
 }
 
 function setDefaultSuggestion(text) {
@@ -82,23 +77,20 @@ function makeSearchUrl(text) {
 }
 
 function makeRelativeDate(date) {
-  if (Intl.RelativeTimeFormat) {
-    let delta = (date - Date.now()) / 1000;
-    for (const [span, unit] of [
-      [60, 'second'],
-      [60, 'minute'],
-      [24, 'hour'],
-      [7, 'day'],
-      [4, 'week'],
-      [12, 'month'],
-      [1e99, 'year'],
-    ]) {
-      if (Math.abs(delta) < span)
-        return new Intl.RelativeTimeFormat({style: 'short'}).format(Math.round(delta), unit);
-      delta /= span;
-    }
+  let delta = (date - Date.now()) / 1000;
+  for (const [span, unit] of [
+    [60, 'second'],
+    [60, 'minute'],
+    [24, 'hour'],
+    [7, 'day'],
+    [4, 'week'],
+    [12, 'month'],
+    [1e99, 'year'],
+  ]) {
+    if (Math.abs(delta) < span)
+      return new Intl.RelativeTimeFormat({style: 'short'}).format(Math.round(delta), unit);
+    delta /= span;
   }
-  return date.toLocaleString();
 }
 
 function makeWordDetector(s) {
