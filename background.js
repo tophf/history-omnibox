@@ -34,11 +34,13 @@ chrome.omnibox.onInputChanged.addListener(async (text, suggest) => {
   }
 });
 
-chrome.omnibox.onInputEntered.addListener(text => {
+chrome.omnibox.onInputEntered.addListener((text, mode) => {
   text = text.trim();
   const url = tryUrl(text) ? text : makeSearchUrl(text);
-  chrome.tabs.update({url});
   chrome.storage.local.remove(STORAGE_TEXT);
+  return mode === 'currentTab'
+    ? chrome.tabs.update({url})
+    : chrome.tabs.create({url, active: mode === 'newForegroundTab'});
 });
 
 async function getLastText() {
